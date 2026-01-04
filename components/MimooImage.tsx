@@ -8,6 +8,7 @@ const mimooImages = {
   salad: require('../assets/images/mimoo-salad.png'),
   exercise: require('../assets/images/mimoo-exercise.png'),
   icon: require('../assets/images/mimoo-icon.png'),
+  main: require('../assets/images/mimoo-icon.png'), // Usando icon como fallback
 }
 
 type MimooVariant = keyof typeof mimooImages

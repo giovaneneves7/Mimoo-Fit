@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { useRouter, Link } from 'expo-router'
 import { useAuth } from '../../contexts/AuthContext'
+import { MimooImage } from '../../components/MimooImage'
 
 export default function Login() {
   const router = useRouter()
@@ -58,13 +59,13 @@ export default function Login() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 px-6 pt-20 pb-8">
-          {/* Header */}
-          <View className="items-center mb-12">
-            <View className="w-24 h-24 bg-coral-500 rounded-full items-center justify-center mb-4 shadow-lg">
-              <Text className="text-5xl">🐰</Text>
+        <View className="flex-1 px-6 pt-16 pb-8">
+          {/* Header com Mimoo */}
+          <View className="items-center mb-10">
+            <View className="mb-4">
+              <MimooImage variant="main" size="xl" animation="bounce" />
             </View>
-            <Text className="font-heading text-3xl font-bold text-gray-800">
+            <Text className="text-3xl font-bold text-gray-800 text-center">
               Bem-vinda de volta!
             </Text>
             <Text className="text-gray-500 mt-2 text-center">
@@ -73,7 +74,7 @@ export default function Login() {
           </View>
 
           {/* Form */}
-          <View className="space-y-4">
+          <View className="gap-4">
             <View>
               <Text className="text-sm font-medium text-gray-700 mb-2">
                 Email
@@ -115,7 +116,7 @@ export default function Login() {
           <TouchableOpacity
             onPress={handleLogin}
             disabled={loading}
-            className={`h-14 rounded-2xl items-center justify-center mt-8 ${
+            className={`h-14 rounded-2xl items-center justify-center mt-8 shadow-lg ${
               loading ? 'bg-coral-300' : 'bg-coral-500'
             }`}
             activeOpacity={0.8}
@@ -141,5 +142,3 @@ export default function Login() {
     </KeyboardAvoidingView>
   )
 }
-
-

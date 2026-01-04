@@ -1,22 +1,31 @@
-import { View, Text, TouchableOpacity, Platform, SafeAreaView } from 'react-native'
-import { Tabs, usePathname, useRouter } from 'expo-router'
+import { View, Text, Platform, SafeAreaView } from 'react-native'
+import { Tabs } from 'expo-router'
 import { useAuth } from '../../contexts/AuthContext'
 import { Redirect } from 'expo-router'
+import { Ionicons, Feather } from '@expo/vector-icons'
 
-// Ícones SVG-like usando emoji (em produção use @expo/vector-icons)
-const TabIcon = ({ icon, label, focused }: { icon: string; label: string; focused: boolean }) => (
-  <View className={`items-center justify-center py-2`}>
-    <Text className={`text-xl ${focused ? 'scale-110' : ''}`}>{icon}</Text>
-    <Text className={`text-xs font-medium mt-1 ${focused ? 'text-coral-600' : 'text-gray-500'}`}>
-      {label}
-    </Text>
+// Ícone customizado para o scanner central
+const ScannerTabIcon = ({ focused }: { focused: boolean }) => (
+  <View className="items-center justify-center -mt-6">
+    <View 
+      className={`w-16 h-16 rounded-full items-center justify-center shadow-lg ${
+        focused ? 'bg-coral-600' : 'bg-coral-500'
+      }`}
+      style={{
+        shadowColor: '#FF7F6B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+      }}
+    >
+      <Ionicons name="camera" size={28} color="white" />
+    </View>
   </View>
 )
 
 export default function AppLayout() {
   const { session, loading } = useAuth()
-  const pathname = usePathname()
-  const router = useRouter()
 
   if (loading) {
     return (
@@ -38,19 +47,30 @@ export default function AppLayout() {
           tabBarStyle: {
             backgroundColor: 'white',
             borderTopWidth: 1,
-            borderTopColor: '#e5e7eb',
-            height: Platform.OS === 'ios' ? 90 : 70,
-            paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-            paddingTop: 10,
+            borderTopColor: '#f3f4f6',
+            height: Platform.OS === 'ios' ? 88 : 68,
+            paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+            paddingTop: 8,
           },
-          tabBarShowLabel: false,
+          tabBarActiveTintColor: '#FF7F6B',
+          tabBarInactiveTintColor: '#9ca3af',
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+            marginTop: 4,
+          },
         }}
       >
         <Tabs.Screen
           name="dashboard"
           options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon icon="🏠" label="Início" focused={focused} />
+            title: 'Início',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons 
+                name={focused ? 'home' : 'home-outline'} 
+                size={24} 
+                color={color} 
+              />
             ),
           }}
         />
@@ -58,8 +78,13 @@ export default function AppLayout() {
         <Tabs.Screen
           name="analytics"
           options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon icon="📊" label="Progresso" focused={focused} />
+            title: 'Progresso',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons 
+                name={focused ? 'stats-chart' : 'stats-chart-outline'} 
+                size={24} 
+                color={color} 
+              />
             ),
           }}
         />
@@ -67,23 +92,21 @@ export default function AppLayout() {
         <Tabs.Screen
           name="scanner"
           options={{
-            tabBarIcon: ({ focused }) => (
-              <View className="items-center justify-center -mt-8">
-                <View className={`w-16 h-16 rounded-full items-center justify-center shadow-lg ${
-                  focused ? 'bg-coral-600' : 'bg-coral-500'
-                }`}>
-                  <Text className="text-3xl">📷</Text>
-                </View>
-              </View>
-            ),
+            title: '',
+            tabBarIcon: ({ focused }) => <ScannerTabIcon focused={focused} />,
           }}
         />
 
         <Tabs.Screen
           name="premium"
           options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon icon="✨" label="Premium" focused={focused} />
+            title: 'Premium',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons 
+                name={focused ? 'diamond' : 'diamond-outline'} 
+                size={24} 
+                color={color} 
+              />
             ),
           }}
         />
@@ -91,8 +114,13 @@ export default function AppLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            tabBarIcon: ({ focused }) => (
-              <TabIcon icon="👤" label="Perfil" focused={focused} />
+            title: 'Perfil',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons 
+                name={focused ? 'person' : 'person-outline'} 
+                size={24} 
+                color={color} 
+              />
             ),
           }}
         />

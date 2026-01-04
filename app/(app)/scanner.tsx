@@ -6,10 +6,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
-  Image,
   ScrollView,
-  Animated,
-  Easing,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera'
@@ -18,60 +15,26 @@ import { MimooImage } from '../../components/MimooImage'
 import { analyzeMealPhoto, MealAnalysis } from '../../lib/openai'
 import { addMeal } from '../../lib/supabase'
 
-type Step = 'camera' | 'preview' | 'analyzing' | 'result' | 'not_food'
+type Step = 'camera' | 'analyzing' | 'result' | 'not_food'
 
-// Feedback gentil do Mimoo baseado nas calorias (igual ao web)
+// Feedback gentil do Mimoo baseado nas calorias
 function getMimooFeedback(
   calories: number,
   macros: { carbs: number; protein: number; fat: number }
 ): string {
-  // Refeição muito calórica - mas sem julgamento!
   if (calories > 1000) {
-    const messages = [
-      `Uau, essa refeição parece deliciosa e bem servida! 🍽️ Se quiser equilibrar, que tal um jantar mais leve com bastante salada? Mas não se preocupe, um dia mais generoso faz parte da vida!`,
-      `Hmm, esse prato está caprichado! 💚 Lembre-se: não é sobre perfeição, é sobre progresso. Nas próximas refeições, você pode optar por algo mais leve se quiser.`,
-      `Parece que você está se alimentando bem! 🌟 Se sentir que exagerou, não se cobre - apenas tente equilibrar nas próximas refeições. Estou aqui com você!`
-    ]
-    return messages[Math.floor(Math.random() * messages.length)]
+    return `Uau, essa refeição parece deliciosa e bem servida! 🍽️ Se quiser equilibrar, que tal um jantar mais leve? Mas não se preocupe, um dia mais generoso faz parte!`
   }
-
-  // Refeição moderadamente calórica
   if (calories > 700) {
-    const messages = [
-      `Parece delicioso! 😋 Essa refeição está bem completa. Se for sua principal do dia, está ótimo! Apenas lembre de manter os lanchinhos mais leves.`,
-      `Boa escolha! 🌿 Uma refeição assim sustenta bem. Nas próximas, foque em vegetais para manter o equilíbrio perfeito.`,
-      `Que refeição bonita! 💚 Está bem servida. Lembre-se de beber bastante água ao longo do dia!`
-    ]
-    return messages[Math.floor(Math.random() * messages.length)]
+    return `Parece delicioso! 😋 Essa refeição está bem completa. Apenas lembre de manter os lanchinhos mais leves.`
   }
-
-  // Refeição equilibrada com proteína
   if (macros.protein > 25) {
-    const messages = [
-      `Ótima escolha! Seu prato está bem equilibrado com proteínas. Continue assim! 💪`,
-      `Perfeito! Uma refeição rica em proteínas ajuda a manter a saciedade. Você está arrasando! ✨`,
-      `Adorei ver proteína no prato! Isso vai te dar energia para o dia todo. 🌟`
-    ]
-    return messages[Math.floor(Math.random() * messages.length)]
+    return `Ótima escolha! Seu prato está bem equilibrado com proteínas. Continue assim! 💪`
   }
-
-  // Refeição leve
   if (calories < 300) {
-    const messages = [
-      `Refeição leve registrada! 🥗 Lembre-se de comer o suficiente para ter energia ao longo do dia.`,
-      `Lanchinho anotado! 🍎 Está se alimentando regularmente? Isso ajuda muito no metabolismo!`,
-      `Boa! Uma refeição leve é perfeita para manter a energia. Não esqueça de fazer um lanchinho depois se sentir fome! 💚`
-    ]
-    return messages[Math.floor(Math.random() * messages.length)]
+    return `Refeição leve registrada! 🥗 Lembre-se de comer o suficiente para ter energia.`
   }
-
-  // Feedback padrão
-  const messages = [
-    `Refeição registrada! Continue acompanhando sua alimentação. Cada registro conta! 📝`,
-    `Anotado! Você está fazendo um ótimo trabalho registrando suas refeições. 💚`,
-    `Mais uma refeição no diário! A consistência é a chave para o sucesso. 🌱`
-  ]
-  return messages[Math.floor(Math.random() * messages.length)]
+  return `Refeição registrada! Continue acompanhando sua alimentação. 📝`
 }
 
 // Frases do Mimoo enquanto fareja
@@ -80,8 +43,6 @@ const sniffPhrases = [
   "Deixa eu farejar isso... 🐰",
   "Analisando cada ingrediente! 🔍",
   "Parece delicioso daqui! 😋",
-  "Calculando os nutrientes... 📊",
-  "O Mimoo está curioso! 🌟"
 ]
 
 export default function Scanner() {
@@ -91,17 +52,10 @@ export default function Scanner() {
   const [facing, setFacing] = useState<CameraType>('back')
   const [step, setStep] = useState<Step>('camera')
   const [photo, setPhoto] = useState<string | null>(null)
-  const [photoBase64, setPhotoBase64] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<MealAnalysis | null>(null)
   const [saving, setSaving] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
   const [currentPhrase, setCurrentPhrase] = useState(0)
-
-  // Animações para a tela de análise
-  const bounceAnim1 = useRef(new Animated.Value(0)).current
-  const bounceAnim2 = useRef(new Animated.Value(0)).current
-  const bounceAnim3 = useRef(new Animated.Value(0)).current
-  const shimmerAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -119,46 +73,6 @@ export default function Scanner() {
     }
   }, [step])
 
-  // Animações durante análise
-  useEffect(() => {
-    if (step === 'analyzing') {
-      // Bounce dos emojis
-      const createBounce = (anim: Animated.Value, delay: number) => {
-        return Animated.loop(
-          Animated.sequence([
-            Animated.delay(delay),
-            Animated.timing(anim, {
-              toValue: -10,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(anim, {
-              toValue: 0,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-          ])
-        )
-      }
-
-      createBounce(bounceAnim1, 0).start()
-      createBounce(bounceAnim2, 300).start()
-      createBounce(bounceAnim3, 600).start()
-
-      // Shimmer da barra
-      Animated.loop(
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      ).start()
-    }
-  }, [step])
-
   const takePicture = async () => {
     if (!cameraRef.current) return
 
@@ -170,7 +84,6 @@ export default function Scanner() {
 
       if (photo?.base64) {
         setPhoto(photo.uri)
-        setPhotoBase64(photo.base64)
         setStep('analyzing')
         analyzePhoto(photo.base64)
       }
@@ -182,14 +95,13 @@ export default function Scanner() {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.7,
       base64: true,
     })
 
     if (!result.canceled && result.assets[0].base64) {
       setPhoto(result.assets[0].uri)
-      setPhotoBase64(result.assets[0].base64)
       setStep('analyzing')
       analyzePhoto(result.assets[0].base64)
     }
@@ -219,23 +131,15 @@ export default function Scanner() {
       const horario = now.toTimeString().substring(0, 8)
       const data = now.toISOString().split('T')[0]
 
-      // Determina o tipo de refeição baseado no horário (igual ao web)
       const hour = now.getHours()
       let tipo_refeicao: 'cafe' | 'lanche_manha' | 'almoco' | 'lanche_tarde' | 'jantar' | 'ceia'
 
-      if (hour < 10) {
-        tipo_refeicao = 'cafe'
-      } else if (hour < 12) {
-        tipo_refeicao = 'lanche_manha'
-      } else if (hour < 15) {
-        tipo_refeicao = 'almoco'
-      } else if (hour < 18) {
-        tipo_refeicao = 'lanche_tarde'
-      } else if (hour < 21) {
-        tipo_refeicao = 'jantar'
-      } else {
-        tipo_refeicao = 'ceia'
-      }
+      if (hour < 10) tipo_refeicao = 'cafe'
+      else if (hour < 12) tipo_refeicao = 'lanche_manha'
+      else if (hour < 15) tipo_refeicao = 'almoco'
+      else if (hour < 18) tipo_refeicao = 'lanche_tarde'
+      else if (hour < 21) tipo_refeicao = 'jantar'
+      else tipo_refeicao = 'ceia'
 
       const saved = await addMeal({
         nome: analysis.nome,
@@ -246,7 +150,7 @@ export default function Scanner() {
         gorduras: analysis.gorduras,
         horario,
         data,
-        confianca_ia: analysis.confianca
+        confianca_ia: Math.round(analysis.confianca * 100)
       })
 
       if (saved) {
@@ -269,10 +173,17 @@ export default function Scanner() {
 
   const reset = () => {
     setPhoto(null)
-    setPhotoBase64(null)
     setAnalysis(null)
     setStep('camera')
     setCurrentPhrase(0)
+  }
+
+  const goBack = () => {
+    try {
+      router.back()
+    } catch {
+      router.push('/(app)/dashboard')
+    }
   }
 
   // Tela de permissão
@@ -296,39 +207,16 @@ export default function Scanner() {
     )
   }
 
-  // Tela de análise (Mimoo farejando) - igual ao web
+  // Tela de análise (Mimoo farejando)
   if (step === 'analyzing') {
     return (
       <SafeAreaView className="flex-1 bg-coral-50 items-center justify-center px-6">
-        {/* Mimoo farejando com animação sniff */}
-        <View className="items-center">
-          <MimooImage variant="camera" size="xl" animation="sniff" />
-          
-          {/* Partículas de "cheiro" */}
-          <View className="flex-row gap-2 mt-4">
-            <Animated.Text 
-              style={{ fontSize: 24, transform: [{ translateY: bounceAnim1 }] }}
-            >
-              ✨
-            </Animated.Text>
-            <Animated.Text 
-              style={{ fontSize: 24, transform: [{ translateY: bounceAnim2 }] }}
-            >
-              💫
-            </Animated.Text>
-            <Animated.Text 
-              style={{ fontSize: 24, transform: [{ translateY: bounceAnim3 }] }}
-            >
-              ✨
-            </Animated.Text>
-          </View>
-
-          {/* Nariz farejando - bolinhas pulsando */}
-          <View className="flex-row gap-1 mt-2">
-            <View className="w-2 h-2 bg-coral-400 rounded-full opacity-75" />
-            <View className="w-2 h-2 bg-sage-400 rounded-full opacity-75" />
-            <View className="w-2 h-2 bg-coral-400 rounded-full opacity-75" />
-          </View>
+        <MimooImage variant="camera" size="xl" animation="sniff" />
+        
+        <View className="flex-row gap-2 mt-4">
+          <Text className="text-2xl">✨</Text>
+          <Text className="text-2xl">💫</Text>
+          <Text className="text-2xl">✨</Text>
         </View>
 
         <Text className="text-3xl font-bold text-gray-800 text-center mt-6 mb-2">
@@ -341,24 +229,8 @@ export default function Scanner() {
           Identificando alimentos e nutrientes com IA
         </Text>
 
-        {/* Barra de progresso animada */}
-        <View className="w-64 mt-8">
-          <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <Animated.View 
-              className="h-full bg-coral-500 rounded-full"
-              style={{
-                transform: [{
-                  translateX: shimmerAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-256, 256]
-                  })
-                }]
-              }}
-            />
-          </View>
-        </View>
+        <ActivityIndicator size="large" color="#FF7F6B" className="mt-8" />
 
-        {/* Ícones de comida */}
         <View className="flex-row gap-4 mt-8">
           <Text className="text-2xl">🥗</Text>
           <Text className="text-2xl">🍎</Text>
@@ -369,58 +241,37 @@ export default function Scanner() {
     )
   }
 
-  // Tela de "não é comida" - igual ao web
+  // Tela de "não é comida"
   if (step === 'not_food') {
     return (
       <SafeAreaView className="flex-1 bg-coral-50 items-center justify-center px-6">
-        {/* Mimoo confuso */}
-        <View className="items-center">
+        <View className="items-center relative">
           <MimooImage variant="camera" size="xl" animation="bounce" />
-          {/* Balão de pensamento */}
-          <View className="absolute -top-4 -right-4 bg-white rounded-full p-3 shadow-lg">
-            <Text className="text-2xl">🤔</Text>
+          <View className="absolute -top-2 -right-2 bg-white rounded-full p-2 shadow-lg">
+            <Text className="text-xl">🤔</Text>
           </View>
         </View>
 
-        {/* Ícone de comida com X */}
-        <View className="mt-6 items-center">
+        <View className="mt-6 items-center relative">
           <View className="w-20 h-20 bg-coral-100 rounded-full items-center justify-center">
             <Text className="text-4xl">🍴</Text>
-          </View>
-          <View className="absolute bottom-0 right-0 w-8 h-8 bg-coral-500 rounded-full items-center justify-center">
-            <Text className="text-white text-lg">❌</Text>
           </View>
         </View>
 
         <Text className="text-2xl font-bold text-gray-800 text-center mt-6 mb-2">
           Hmm, isso não parece comida! 🧐
         </Text>
-        <Text className="text-gray-600 text-center px-8 mb-2">
-          O Mimoo só consegue analisar fotos de <Text className="font-semibold text-coral-600">refeições e alimentos</Text>. Tente tirar uma foto do seu prato, lanche ou bebida!
+        <Text className="text-gray-600 text-center px-4 mb-4">
+          O Mimoo só consegue analisar fotos de refeições e alimentos. Tente tirar uma foto do seu prato!
         </Text>
-        {analysis?.observacoes && (
-          <Text className="text-sm text-gray-500 italic bg-white/60 rounded-2xl p-3 text-center">
-            "{analysis.observacoes}"
-          </Text>
-        )}
 
-        {/* Dicas */}
-        <View className="bg-white rounded-3xl p-5 w-full mt-6 mb-6">
+        <View className="bg-white rounded-3xl p-5 w-full mb-6">
           <Text className="text-sm font-semibold text-gray-700 mb-3">💡 Dicas para uma boa foto:</Text>
-          <View className="gap-2">
-            <Text className="text-sm text-gray-600">
-              <Text className="text-sage-500">✓</Text> Centralize a comida na foto
-            </Text>
-            <Text className="text-sm text-gray-600">
-              <Text className="text-sage-500">✓</Text> Boa iluminação ajuda muito
-            </Text>
-            <Text className="text-sm text-gray-600">
-              <Text className="text-sage-500">✓</Text> Foto de cima funciona melhor
-            </Text>
-          </View>
+          <Text className="text-sm text-gray-600 mb-2">✓ Centralize a comida na foto</Text>
+          <Text className="text-sm text-gray-600 mb-2">✓ Boa iluminação ajuda muito</Text>
+          <Text className="text-sm text-gray-600">✓ Foto de cima funciona melhor</Text>
         </View>
 
-        {/* Botões */}
         <View className="w-full gap-3">
           <TouchableOpacity
             onPress={reset}
@@ -443,29 +294,28 @@ export default function Scanner() {
 
           <TouchableOpacity
             onPress={() => router.push('/(app)/dashboard')}
-            className="w-full h-12"
+            className="w-full h-12 items-center justify-center"
           >
-            <Text className="text-gray-500 text-center font-medium">Voltar ao início</Text>
+            <Text className="text-gray-500 font-medium">Voltar ao início</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     )
   }
 
-  // Tela de resultado - igual ao web
+  // Tela de resultado
   if (step === 'result' && analysis) {
     const isHighCalorie = analysis.calorias > 800
 
     return (
       <SafeAreaView className="flex-1 bg-cream">
-        {/* Header */}
         <View className="bg-white px-6 py-4 flex-row items-center justify-between border-b border-gray-100">
           <TouchableOpacity 
             onPress={reset} 
             disabled={saving}
-            className="w-10 h-10 items-center justify-center rounded-full"
+            className="w-10 h-10 items-center justify-center"
           >
-            <Text className="text-xl">←</Text>
+            <Text className="text-2xl">←</Text>
           </TouchableOpacity>
           <Text className="text-xl font-bold text-gray-800">Análise da refeição</Text>
           <View className="w-10" />
@@ -473,25 +323,23 @@ export default function Scanner() {
 
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           <View className="px-6 py-6">
-            {/* Mimoo com animação */}
             <View className="items-center mb-6">
               <MimooImage variant="salad" size="lg" animation="bounce" />
               <View className="flex-row items-center mt-4">
                 <Text className="text-sage-600 text-xl mr-2">✓</Text>
-                <Text className="text-2xl font-bold text-gray-800 text-center">
+                <Text className="text-xl font-bold text-gray-800 text-center">
                   {analysis.calorias > 800 
-                    ? 'Hmm, que refeição caprichada! 🍽️'
+                    ? 'Refeição caprichada! 🍽️'
                     : analysis.calorias > 500 
-                    ? 'Uau, parece delicioso! 😋'
+                    ? 'Parece delicioso! 😋'
                     : 'Boa escolha! 🌿'}
                 </Text>
               </View>
               <Text className="text-gray-600 mt-1">
-                Analisei com {Math.round(analysis.confianca * 100)}% de confiança
+                Analisei com {analysis.confianca < 1 ? Math.round(analysis.confianca * 100) : Math.round(analysis.confianca)}% de confiança
               </Text>
             </View>
 
-            {/* Nome da comida */}
             <View className="bg-white rounded-3xl p-6 shadow-lg mb-4">
               <View className="items-center">
                 <Text className="text-5xl mb-3">🍽️</Text>
@@ -501,14 +349,12 @@ export default function Scanner() {
               </View>
             </View>
 
-            {/* Calorias */}
             <View className="bg-coral-500 rounded-3xl p-6 mb-4">
               <Text className="text-coral-100 text-sm text-center mb-2">Calorias totais</Text>
               <Text className="text-5xl font-bold text-white text-center">{analysis.calorias}</Text>
               <Text className="text-coral-100 text-sm text-center mt-1">kcal</Text>
             </View>
 
-            {/* Macros */}
             <Text className="text-lg font-bold text-gray-800 mb-3">Macronutrientes</Text>
             <View className="flex-row gap-3 mb-4">
               <View className="flex-1 bg-white rounded-2xl p-4 items-center shadow-md">
@@ -536,7 +382,6 @@ export default function Scanner() {
               </View>
             </View>
 
-            {/* Dica do Mimoo */}
             <View className={`rounded-3xl p-5 mb-6 ${isHighCalorie ? 'bg-amber-50' : 'bg-sage-50'}`}>
               <View className="flex-row">
                 <MimooImage variant="salad" size="sm" />
@@ -555,7 +400,6 @@ export default function Scanner() {
               </View>
             </View>
 
-            {/* Botões - igual ao web */}
             <View className="gap-3 pb-6">
               <TouchableOpacity
                 onPress={handleSave}
@@ -588,7 +432,7 @@ export default function Scanner() {
     )
   }
 
-  // Tela de câmera - igual ao web
+  // Tela de câmera
   return (
     <View className="flex-1 bg-black">
       <CameraView
@@ -596,12 +440,15 @@ export default function Scanner() {
         style={{ flex: 1 }}
         facing={facing}
         onCameraReady={() => setCameraReady(true)}
-      >
+      />
+      
+      {/* Overlay da câmera */}
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         <SafeAreaView className="flex-1">
           {/* Header */}
           <View className="flex-row items-center justify-between px-6 pt-4">
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={goBack}
               className="w-10 h-10 bg-black/30 rounded-full items-center justify-center"
             >
               <Text className="text-white text-xl">←</Text>
@@ -618,21 +465,10 @@ export default function Scanner() {
           {/* Guia de enquadramento */}
           <View className="flex-1 items-center justify-center">
             <View className="w-72 h-72 border-4 border-coral-500/60 rounded-3xl items-center justify-center">
-              {/* Cantos decorativos */}
-              <View className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-coral-500 rounded-tl-xl" />
-              <View className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-coral-500 rounded-tr-xl" />
-              <View className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-coral-500 rounded-bl-xl" />
-              <View className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-coral-500 rounded-br-xl" />
-              
               {!cameraReady && (
                 <View className="items-center">
                   <MimooImage variant="camera" size="lg" animation="bounce" />
                   <Text className="text-white/70 text-sm mt-4">Iniciando câmera...</Text>
-                  <View className="flex-row gap-2 mt-2">
-                    <View className="w-2 h-2 bg-coral-500 rounded-full" />
-                    <View className="w-2 h-2 bg-coral-500 rounded-full" />
-                    <View className="w-2 h-2 bg-coral-500 rounded-full" />
-                  </View>
                 </View>
               )}
             </View>
@@ -648,7 +484,6 @@ export default function Scanner() {
           {/* Controles */}
           <View className="px-6 pb-12">
             <View className="flex-row items-center justify-center gap-8">
-              {/* Galeria */}
               <TouchableOpacity
                 onPress={pickImage}
                 className="w-14 h-14 bg-white/20 rounded-full items-center justify-center"
@@ -656,7 +491,6 @@ export default function Scanner() {
                 <Text className="text-2xl">🖼️</Text>
               </TouchableOpacity>
 
-              {/* Capturar */}
               <TouchableOpacity
                 onPress={cameraReady ? takePicture : undefined}
                 disabled={!cameraReady}
@@ -667,13 +501,8 @@ export default function Scanner() {
                 <View className="w-16 h-16 border-4 border-white rounded-full items-center justify-center">
                   <Text className="text-3xl">📷</Text>
                 </View>
-                {/* Anel de pulsação quando pronto */}
-                {cameraReady && (
-                  <View className="absolute w-20 h-20 rounded-full border-4 border-coral-400 opacity-50" />
-                )}
               </TouchableOpacity>
 
-              {/* Trocar câmera */}
               <TouchableOpacity
                 onPress={() => setFacing(facing === 'back' ? 'front' : 'back')}
                 className="w-14 h-14 bg-white/20 rounded-full items-center justify-center"
@@ -682,7 +511,6 @@ export default function Scanner() {
               </TouchableOpacity>
             </View>
 
-            {/* Dica */}
             <View className="items-center mt-6">
               <View className="bg-sage-500/90 px-4 py-2 rounded-full flex-row items-center">
                 <Text className="text-white mr-2">✨</Text>
@@ -691,7 +519,7 @@ export default function Scanner() {
             </View>
           </View>
         </SafeAreaView>
-      </CameraView>
+      </View>
     </View>
   )
 }
