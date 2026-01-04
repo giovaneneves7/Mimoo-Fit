@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { View, Text, Animated, Easing, Dimensions, Modal } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
@@ -53,9 +54,9 @@ function ConfettiParticle({ particle }: { particle: Particle }) {
     outputRange: [1, 0.9, 0.7, 0],
   })
 
-  const emoji = particle.type === 'leaf' ? '🌿' : 
-                particle.type === 'star' ? '⭐' : 
-                particle.type === 'heart' ? '💚' : null
+  const iconName = particle.type === 'leaf' ? 'leaf' : 
+                   particle.type === 'star' ? 'star' : 
+                   particle.type === 'heart' ? 'heart' : null
 
   return (
     <Animated.View
@@ -77,9 +78,11 @@ function ConfettiParticle({ particle }: { particle: Particle }) {
           }}
         />
       ) : (
-        <Text style={{ fontSize: particle.type === 'star' ? 18 : 20, color: particle.color }}>
-          {emoji}
-        </Text>
+        <Ionicons 
+          name={iconName as any} 
+          size={particle.type === 'star' ? 16 : 18} 
+          color={particle.color} 
+        />
       )}
     </Animated.View>
   )
@@ -164,7 +167,7 @@ interface CelebrationProps {
 
 export function Celebration({
   active,
-  message = '🎉 Parabéns!',
+  message = 'Parabéns!',
   subMessage = 'Você atingiu sua meta!',
   onClose,
   autoClose = true,
@@ -194,7 +197,7 @@ export function Celebration({
         }),
       ]).start()
 
-      // Animação de bounce do emoji
+      // Animação de bounce do ícone
       Animated.loop(
         Animated.sequence([
           Animated.timing(bounceAnim, {
@@ -239,9 +242,6 @@ export function Celebration({
 
   if (!show) return null
 
-  const emoji = message.includes('🎉') ? '🎉' : '✨'
-  const cleanMessage = message.replace(/[🎉✨]/g, '').trim() || 'Parabéns!'
-
   return (
     <Modal visible={show} transparent animationType="none">
       <View style={{ 
@@ -269,15 +269,14 @@ export function Celebration({
             opacity: opacityAnim,
           }}
         >
-          <Animated.Text 
+          <Animated.View 
             style={{ 
-              fontSize: 60, 
               marginBottom: 16,
               transform: [{ translateY: bounceAnim }],
             }}
           >
-            {emoji}
-          </Animated.Text>
+            <Ionicons name="trophy" size={60} color="#FFD700" />
+          </Animated.View>
           
           <Text style={{ 
             fontSize: 24, 
@@ -286,7 +285,7 @@ export function Celebration({
             marginBottom: 8,
             textAlign: 'center',
           }}>
-            {cleanMessage}
+            {message}
           </Text>
           
           <Text style={{ 
@@ -347,4 +346,3 @@ function PulsingDot({ color, delay }: { color: string; delay: number }) {
     />
   )
 }
-

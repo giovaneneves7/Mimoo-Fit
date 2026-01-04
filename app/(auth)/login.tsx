@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native'
 import { useRouter, Link } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { MimooImage } from '../../components/MimooImage'
 
@@ -21,6 +22,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -68,9 +70,10 @@ export default function Login() {
             <Text className="text-3xl font-bold text-gray-800 text-center">
               Bem-vinda de volta!
             </Text>
-            <Text className="text-gray-500 mt-2 text-center">
-              O Mimoo sentiu sua falta 💚
-            </Text>
+            <View className="flex-row items-center mt-2">
+              <Text className="text-gray-500">O Mimoo sentiu sua falta </Text>
+              <Ionicons name="heart" size={16} color="#8FBC8F" />
+            </View>
           </View>
 
           {/* Form */}
@@ -79,30 +82,43 @@ export default function Login() {
               <Text className="text-sm font-medium text-gray-700 mb-2">
                 Email
               </Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="seu@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                className="h-14 px-4 bg-white rounded-2xl border border-gray-200 text-gray-800"
-                placeholderTextColor="#9CA3AF"
-              />
+              <View className="flex-row items-center h-14 bg-white rounded-2xl border border-gray-200 px-4">
+                <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={{ marginRight: 12 }} />
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="seu@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="flex-1 text-gray-800"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
             </View>
 
             <View>
               <Text className="text-sm font-medium text-gray-700 mb-2">
                 Senha
               </Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                secureTextEntry
-                className="h-14 px-4 bg-white rounded-2xl border border-gray-200 text-gray-800"
-                placeholderTextColor="#9CA3AF"
-              />
+              <View className="flex-row items-center h-14 bg-white rounded-2xl border border-gray-200 px-4">
+                <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={{ marginRight: 12 }} />
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••••"
+                  secureTextEntry={!showPassword}
+                  className="flex-1 text-gray-800"
+                  placeholderTextColor="#9CA3AF"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons 
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                    size={20} 
+                    color="#9CA3AF" 
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity>
@@ -116,7 +132,7 @@ export default function Login() {
           <TouchableOpacity
             onPress={handleLogin}
             disabled={loading}
-            className={`h-14 rounded-2xl items-center justify-center mt-8 shadow-lg ${
+            className={`h-14 rounded-2xl items-center justify-center mt-8 shadow-lg flex-row ${
               loading ? 'bg-coral-300' : 'bg-coral-500'
             }`}
             activeOpacity={0.8}
@@ -124,7 +140,10 @@ export default function Login() {
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white font-bold text-lg">Entrar</Text>
+              <>
+                <Ionicons name="log-in-outline" size={20} color="white" style={{ marginRight: 8 }} />
+                <Text className="text-white font-bold text-lg">Entrar</Text>
+              </>
             )}
           </TouchableOpacity>
 
