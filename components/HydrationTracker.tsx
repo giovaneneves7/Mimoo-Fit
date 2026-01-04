@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, Animated, Easing, Modal } from 'react-native'
+import { View, Text, TouchableOpacity, Animated } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { MimooImage } from './MimooImage'
 import { getTodayHydration, addHydration, removeLastHydration, getCurrentUser, HydrationLog } from '../lib/supabase'
 
@@ -8,32 +9,32 @@ interface HydrationTrackerProps {
   onUpdate?: () => void
 }
 
-// Mensagens carinhosas do Mimoo baseadas na hidratação (igual ao web)
+// Mensagens carinhosas do Mimoo baseadas na hidratação
 function getMimooHydrationMessage(current: number, goal: number): string {
   const percentage = (current / goal) * 100
 
   if (current === 0) {
     const messages = [
-      'Vamos começar o dia bem hidratadas! 💧',
-      'Uma aguinha agora ia bem, né? 🌊',
-      'O Mimoo está com sede... e você? 💦'
+      'Vamos começar o dia bem hidratadas!',
+      'Uma aguinha agora ia bem, né?',
+      'O Mimoo está com sede... e você?'
     ]
     return messages[Math.floor(Math.random() * messages.length)]
   }
 
   if (percentage < 25) {
-    return 'Bom começo! Continue assim 💪'
+    return 'Bom começo! Continue assim'
   } else if (percentage < 50) {
-    return 'Você está indo bem! Já é quase metade 🌟'
+    return 'Você está indo bem! Já é quase metade'
   } else if (percentage < 75) {
-    return 'Mais da metade! O Mimoo está orgulhoso 💚'
+    return 'Mais da metade! O Mimoo está orgulhoso'
   } else if (percentage < 100) {
-    return 'Quase lá! Falta pouquinho! 🎯'
+    return 'Quase lá! Falta pouquinho!'
   } else {
     const messages = [
-      '🎉 Meta batida! Você é incrível!',
-      '💧 Hidratação completa! Parabéns!',
-      '🏆 Você arrasou hoje!'
+      'Meta batida! Você é incrível!',
+      'Hidratação completa! Parabéns!',
+      'Você arrasou hoje!'
     ]
     return messages[Math.floor(Math.random() * messages.length)]
   }
@@ -46,7 +47,6 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
   const [removing, setRemoving] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
 
-  // Animações
   const celebrationScale = useRef(new Animated.Value(0)).current
   const celebrationOpacity = useRef(new Animated.Value(0)).current
 
@@ -54,7 +54,6 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
     loadData()
   }, [])
 
-  // Animação de celebração
   useEffect(() => {
     if (showCelebration) {
       Animated.parallel([
@@ -116,7 +115,6 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
           logs: [result, ...prev.logs]
         }))
 
-        // Celebração quando atinge a meta (igual ao web)
         if (hydrationData.total < waterGoal && newTotal >= waterGoal) {
           setShowCelebration(true)
         }
@@ -155,14 +153,14 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
   const glasses = Math.floor(hydrationData.total / 250)
   const mimooMessage = getMimooHydrationMessage(hydrationData.total, waterGoal)
 
-  // Versão compacta para Dashboard (igual ao web)
+  // Versão compacta para Dashboard
   if (compact) {
     return (
       <View className="bg-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center">
             <View className="w-12 h-12 bg-blue-100 rounded-2xl items-center justify-center mr-3">
-              <Text className="text-2xl">💧</Text>
+              <Ionicons name="water" size={24} color="#3B82F6" />
             </View>
             <View>
               <Text className="text-sm text-gray-500">Hidratação</Text>
@@ -180,7 +178,7 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
                 removing || hydrationData.logs.length === 0 ? 'opacity-50' : ''
               }`}
             >
-              <Text className="text-xl text-gray-600">−</Text>
+              <Ionicons name="remove" size={20} color="#6B7280" />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleAddWater(250)}
@@ -189,12 +187,12 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
                 adding ? 'opacity-50' : ''
               }`}
             >
-              <Text className="text-xl text-white">+</Text>
+              <Ionicons name="add" size={20} color="white" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Barra de progresso com gotas */}
+        {/* Barra de progresso */}
         <View className="h-4 bg-blue-100 rounded-full overflow-hidden relative">
           <View
             style={{ width: `${percentage}%` }}
@@ -202,7 +200,6 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
               percentage >= 100 ? 'bg-sage-500' : 'bg-blue-500'
             }`}
           />
-          {/* Gotas de água decorativas */}
           <View className="absolute inset-0 flex-row items-center justify-around">
             {[...Array(8)].map((_, i) => (
               <View
@@ -229,7 +226,11 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
               opacity: celebrationOpacity,
             }}
           >
-            <Text className="text-4xl mb-2">🎉💧</Text>
+            <View className="flex-row items-center mb-2">
+              <Ionicons name="trophy" size={32} color="#FFD700" />
+              <Ionicons name="water" size={32} color="white" style={{ marginHorizontal: 8 }} />
+              <Ionicons name="trophy" size={32} color="#FFD700" />
+            </View>
             <Text className="text-white font-bold text-lg">Meta de água batida!</Text>
             <Text className="text-white/90 text-sm">Você é demais!</Text>
           </Animated.View>
@@ -238,15 +239,15 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
     )
   }
 
-  // Versão completa (igual ao web)
+  // Versão completa
   return (
     <View className="bg-white rounded-3xl p-6 shadow-lg relative overflow-hidden">
       {/* Header */}
       <View className="flex-row items-start justify-between mb-6">
         <View>
           <View className="flex-row items-center mb-1">
-            <Text className="text-xl mr-2">💧</Text>
-            <Text className="font-bold text-lg text-gray-800">Hidratação</Text>
+            <Ionicons name="water" size={22} color="#3B82F6" />
+            <Text className="font-bold text-lg text-gray-800 ml-2">Hidratação</Text>
           </View>
           <Text className="text-sm text-gray-500">Acompanhe sua água do dia</Text>
         </View>
@@ -256,9 +257,7 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
       {/* Círculo de progresso */}
       <View className="items-center mb-6">
         <View className="w-48 h-48 items-center justify-center">
-          {/* Background circle */}
           <View className="absolute w-40 h-40 rounded-full border-[16px] border-blue-100" />
-          {/* Progress indicator */}
           <View 
             className="absolute w-40 h-40 rounded-full border-[16px]"
             style={{
@@ -271,8 +270,8 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
             }}
           />
           <View className="items-center">
-            <Text className="text-4xl mb-1">💧</Text>
-            <Text className="text-3xl font-bold text-blue-600">
+            <Ionicons name="water" size={36} color="#3B82F6" />
+            <Text className="text-3xl font-bold text-blue-600 mt-1">
               {(hydrationData.total / 1000).toFixed(1)}L
             </Text>
             <Text className="text-sm text-gray-600">de {(waterGoal / 1000).toFixed(1)}L</Text>
@@ -282,7 +281,7 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
 
       {/* Mensagem do Mimoo */}
       <View className="bg-blue-50 rounded-2xl p-4 mb-6 flex-row items-center justify-center">
-        <Text className="mr-2">✨</Text>
+        <Ionicons name="sparkles" size={16} color="#3B82F6" style={{ marginRight: 8 }} />
         <Text className="text-sm font-medium text-blue-700">{mimooMessage}</Text>
       </View>
 
@@ -297,7 +296,7 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
               adding ? 'opacity-50' : ''
             }`}
           >
-            <Text className="text-lg">💧</Text>
+            <Ionicons name="water" size={18} color="#3B82F6" />
             <Text className="text-xs font-medium text-gray-700">{amount}ml</Text>
           </TouchableOpacity>
         ))}
@@ -312,7 +311,7 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
             removing || hydrationData.logs.length === 0 ? 'opacity-50' : ''
           }`}
         >
-          <Text className="text-lg mr-2">−</Text>
+          <Ionicons name="arrow-undo" size={18} color="#6B7280" style={{ marginRight: 8 }} />
           <Text className="font-semibold text-gray-700">Desfazer</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -322,7 +321,7 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
             adding ? 'opacity-50' : ''
           }`}
         >
-          <Text className="text-lg text-white mr-2">+</Text>
+          <Ionicons name="add" size={18} color="white" style={{ marginRight: 8 }} />
           <Text className="font-semibold text-white">1 Copo</Text>
         </TouchableOpacity>
       </View>
@@ -339,7 +338,7 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
                 key={log.id || index}
                 className="w-8 h-8 bg-blue-100 rounded-lg items-center justify-center"
               >
-                <Text>💧</Text>
+                <Ionicons name="water" size={16} color="#3B82F6" />
               </View>
             ))}
             {hydrationData.logs.length > 12 && (
@@ -360,7 +359,11 @@ export function HydrationTracker({ compact = false, onUpdate }: HydrationTracker
             opacity: celebrationOpacity,
           }}
         >
-          <Text className="text-6xl mb-4">🎉💧🎉</Text>
+          <View className="flex-row items-center mb-4">
+            <Ionicons name="trophy" size={48} color="#FFD700" />
+            <Ionicons name="water" size={48} color="white" style={{ marginHorizontal: 12 }} />
+            <Ionicons name="trophy" size={48} color="#FFD700" />
+          </View>
           <Text className="text-white font-bold text-2xl mb-2">Meta de água batida!</Text>
           <Text className="text-white/90 text-lg">O Mimoo está orgulhoso de você!</Text>
           <View className="mt-4">

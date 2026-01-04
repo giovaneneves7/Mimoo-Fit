@@ -8,34 +8,30 @@ import {
   RefreshControl,
 } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { MimooImage } from '../../components/MimooImage'
 import {
   getCurrentUser,
   getWeekProgress,
-  getWeightHistory,
   User as UserType,
   DailyProgress,
-  WeightLog,
 } from '../../lib/supabase'
 
 export default function Analytics() {
   const router = useRouter()
   const [user, setUser] = useState<UserType | null>(null)
   const [weekProgress, setWeekProgress] = useState<DailyProgress[]>([])
-  const [weightHistory, setWeightHistory] = useState<WeightLog[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const loadData = async () => {
     try {
-      const [userData, weekData, weightData] = await Promise.all([
+      const [userData, weekData] = await Promise.all([
         getCurrentUser(),
         getWeekProgress(),
-        getWeightHistory(),
       ])
       setUser(userData)
       setWeekProgress(weekData)
-      setWeightHistory(weightData)
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
     } finally {
@@ -70,9 +66,9 @@ export default function Analytics() {
   const daysOnTrack = weekProgress.filter(day => day.meta_cumprida).length
 
   // Calcular variação de peso
-  const latestWeight = weightHistory[0]?.peso || user.peso
-  const oldestWeight = weightHistory[weightHistory.length - 1]?.peso || user.peso
-  const weightChange = latestWeight - oldestWeight
+  const latestWeight = user.peso
+  const goalWeight = user.peso_meta
+  const weightDiff = latestWeight - goalWeight
 
   // Dias da semana para gráfico
   const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -106,7 +102,10 @@ export default function Analytics() {
       >
         {/* Header */}
         <View className="px-6 pt-6 pb-4">
-          <Text className="text-3xl font-bold text-gray-800">📊 Seu Progresso</Text>
+          <View className="flex-row items-center">
+            <Ionicons name="stats-chart" size={28} color="#374151" />
+            <Text className="text-3xl font-bold text-gray-800 ml-2">Seu Progresso</Text>
+          </View>
           <Text className="text-gray-500 mt-1">Acompanhe sua evolução</Text>
         </View>
 
@@ -120,11 +119,13 @@ export default function Analytics() {
 
             <View className="flex-row gap-3">
               <View className="flex-1 bg-coral-50 rounded-2xl p-4 items-center">
-                <Text className="text-2xl font-bold text-coral-600">{avgCalories}</Text>
+                <Ionicons name="flame" size={24} color="#FF7F6B" />
+                <Text className="text-2xl font-bold text-coral-600 mt-2">{avgCalories}</Text>
                 <Text className="text-xs text-gray-600 mt-1">média kcal/dia</Text>
               </View>
               <View className="flex-1 bg-sage-50 rounded-2xl p-4 items-center">
-                <Text className="text-2xl font-bold text-sage-600">{daysOnTrack}/7</Text>
+                <Ionicons name="checkmark-circle" size={24} color="#8FBC8F" />
+                <Text className="text-2xl font-bold text-sage-600 mt-2">{daysOnTrack}/7</Text>
                 <Text className="text-xs text-gray-600 mt-1">dias na meta</Text>
               </View>
             </View>
@@ -132,7 +133,10 @@ export default function Analytics() {
 
           {/* Gráfico de Calorias da Semana */}
           <View className="bg-white rounded-3xl p-6 shadow-lg mb-4">
-            <Text className="text-lg font-bold text-gray-800 mb-4">Calorias diárias</Text>
+            <View className="flex-row items-center mb-4">
+              <Ionicons name="bar-chart" size={20} color="#374151" />
+              <Text className="text-lg font-bold text-gray-800 ml-2">Calorias diárias</Text>
+            </View>
             
             <View className="flex-row items-end justify-between h-40">
               {weekDaysChart.map((day, index) => (
@@ -164,31 +168,38 @@ export default function Analytics() {
 
           {/* Evolução de Peso */}
           <View className="bg-white rounded-3xl p-6 shadow-lg mb-4">
-            <Text className="text-lg font-bold text-gray-800 mb-4">Evolução de peso</Text>
+            <View className="flex-row items-center mb-4">
+              <Ionicons name="trending-up" size={20} color="#374151" />
+              <Text className="text-lg font-bold text-gray-800 ml-2">Evolução de peso</Text>
+            </View>
             
             <View className="flex-row gap-3 mb-4">
               <View className="flex-1 bg-gray-50 rounded-2xl p-4 items-center">
-                <Text className="text-sm text-gray-500">Peso atual</Text>
+                <Ionicons name="scale" size={20} color="#6B7280" />
+                <Text className="text-sm text-gray-500 mt-1">Peso atual</Text>
                 <Text className="text-2xl font-bold text-gray-800">{user.peso}kg</Text>
               </View>
               <View className="flex-1 bg-gray-50 rounded-2xl p-4 items-center">
-                <Text className="text-sm text-gray-500">Meta</Text>
+                <Ionicons name="flag" size={20} color="#8FBC8F" />
+                <Text className="text-sm text-gray-500 mt-1">Meta</Text>
                 <Text className="text-2xl font-bold text-sage-600">{user.peso_meta}kg</Text>
               </View>
             </View>
 
             <View className={`flex-row items-center justify-center p-4 rounded-2xl ${
-              weightChange < 0 ? 'bg-sage-50' : weightChange > 0 ? 'bg-coral-50' : 'bg-gray-50'
+              weightDiff < 0 ? 'bg-sage-50' : weightDiff > 0 ? 'bg-coral-50' : 'bg-gray-50'
             }`}>
-              <Text className="text-2xl mr-2">
-                {weightChange < 0 ? '📉' : weightChange > 0 ? '📈' : '⚖️'}
-              </Text>
-              <Text className={`text-lg font-bold ${
-                weightChange < 0 ? 'text-sage-600' : weightChange > 0 ? 'text-coral-600' : 'text-gray-600'
+              <Ionicons 
+                name={weightDiff < 0 ? 'trending-down' : weightDiff > 0 ? 'trending-up' : 'remove'} 
+                size={24} 
+                color={weightDiff < 0 ? '#8FBC8F' : weightDiff > 0 ? '#FF7F6B' : '#6B7280'} 
+              />
+              <Text className={`text-lg font-bold ml-2 ${
+                weightDiff < 0 ? 'text-sage-600' : weightDiff > 0 ? 'text-coral-600' : 'text-gray-600'
               }`}>
-                {weightChange === 0 ? 'Mantendo peso' : 
-                 weightChange < 0 ? `${Math.abs(weightChange).toFixed(1)}kg perdidos` :
-                 `${weightChange.toFixed(1)}kg ganhos`}
+                {weightDiff === 0 ? 'Na meta!' : 
+                 weightDiff < 0 ? `${Math.abs(weightDiff).toFixed(1)}kg abaixo da meta` :
+                 `${weightDiff.toFixed(1)}kg para a meta`}
               </Text>
             </View>
           </View>
@@ -197,15 +208,16 @@ export default function Analytics() {
           <View className="bg-sage-50 rounded-3xl p-5 mb-8 flex-row">
             <MimooImage variant="salad" size="sm" />
             <View className="flex-1 ml-3">
-              <Text className="text-sm font-semibold text-gray-800 mb-1">
-                💡 Dica do Mimoo
-              </Text>
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="bulb" size={16} color="#8FBC8F" />
+                <Text className="text-sm font-semibold text-gray-800 ml-1">Dica do Mimoo</Text>
+              </View>
               <Text className="text-sm text-gray-700">
                 {daysOnTrack >= 5 
-                  ? 'Incrível! Você está arrasando esta semana. Continue assim! 🎉'
+                  ? 'Incrível! Você está arrasando esta semana. Continue assim!'
                   : daysOnTrack >= 3
-                  ? 'Bom progresso! Foque nos próximos dias para manter a consistência. 💪'
-                  : 'Cada dia é uma nova chance! Vamos focar em pequenas melhorias. 🌱'}
+                  ? 'Bom progresso! Foque nos próximos dias para manter a consistência.'
+                  : 'Cada dia é uma nova chance! Vamos focar em pequenas melhorias.'}
               </Text>
             </View>
           </View>
@@ -217,4 +229,3 @@ export default function Analytics() {
     </SafeAreaView>
   )
 }
-
