@@ -1,80 +1,102 @@
-import { Tabs } from 'expo-router'
-import { View, Text } from 'react-native'
+import { View, Text, TouchableOpacity, Platform, SafeAreaView } from 'react-native'
+import { Tabs, usePathname, useRouter } from 'expo-router'
+import { useAuth } from '../../contexts/AuthContext'
+import { Redirect } from 'expo-router'
+
+// Ícones SVG-like usando emoji (em produção use @expo/vector-icons)
+const TabIcon = ({ icon, label, focused }: { icon: string; label: string; focused: boolean }) => (
+  <View className={`items-center justify-center py-2`}>
+    <Text className={`text-xl ${focused ? 'scale-110' : ''}`}>{icon}</Text>
+    <Text className={`text-xs font-medium mt-1 ${focused ? 'text-coral-600' : 'text-gray-500'}`}>
+      {label}
+    </Text>
+  </View>
+)
 
 export default function AppLayout() {
+  const { session, loading } = useAuth()
+  const pathname = usePathname()
+  const router = useRouter()
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-cream items-center justify-center">
+        <Text className="text-gray-500">Carregando...</Text>
+      </SafeAreaView>
+    )
+  }
+
+  if (!session) {
+    return <Redirect href="/(auth)/login" />
+  }
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 0,
-          elevation: 20,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-          height: 80,
-          paddingBottom: 20,
-          paddingTop: 10,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          position: 'absolute',
-        },
-        tabBarActiveTintColor: '#FF7F6B',
-        tabBarInactiveTintColor: '#9CA3AF',
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: 'Início',
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              className={`w-10 h-10 rounded-xl items-center justify-center ${
-                focused ? 'bg-coral-100' : ''
-              }`}
-            >
-              <Text style={{ fontSize: 24 }}>🏠</Text>
-            </View>
-          ),
+    <View className="flex-1 bg-cream">
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: 'white',
+            borderTopWidth: 1,
+            borderTopColor: '#e5e7eb',
+            height: Platform.OS === 'ios' ? 90 : 70,
+            paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+            paddingTop: 10,
+          },
+          tabBarShowLabel: false,
         }}
-      />
-      <Tabs.Screen
-        name="scanner"
-        options={{
-          title: 'Scanner',
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              className={`w-14 h-14 rounded-full items-center justify-center -mt-6 ${
-                focused ? 'bg-coral-500' : 'bg-coral-400'
-              } shadow-lg`}
-            >
-              <Text style={{ fontSize: 28 }}>📸</Text>
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              className={`w-10 h-10 rounded-xl items-center justify-center ${
-                focused ? 'bg-coral-100' : ''
-              }`}
-            >
-              <Text style={{ fontSize: 24 }}>👤</Text>
-            </View>
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="dashboard"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="🏠" label="Início" focused={focused} />
+            ),
+          }}
+        />
+        
+        <Tabs.Screen
+          name="analytics"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="📊" label="Progresso" focused={focused} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="scanner"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <View className="items-center justify-center -mt-8">
+                <View className={`w-16 h-16 rounded-full items-center justify-center shadow-lg ${
+                  focused ? 'bg-coral-600' : 'bg-coral-500'
+                }`}>
+                  <Text className="text-3xl">📷</Text>
+                </View>
+              </View>
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="premium"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="✨" label="Premium" focused={focused} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="profile"
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="👤" label="Perfil" focused={focused} />
+            ),
+          }}
+        />
+      </Tabs>
+    </View>
   )
 }
-

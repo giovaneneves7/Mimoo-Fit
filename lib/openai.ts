@@ -102,3 +102,4 @@ export async function analyzeMealPhoto(base64Image: string): Promise<MealAnalysi
   }
 }
 
+

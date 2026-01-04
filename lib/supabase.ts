@@ -1,17 +1,30 @@
-import 'react-native-url-polyfill/dist/setup'
+import 'react-native-url-polyfill/auto'
 import { createClient } from '@supabase/supabase-js'
-import * as SecureStore from 'expo-secure-store'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Platform } from 'react-native'
 
-// Adapter para SecureStore (armazenamento seguro no dispositivo)
-const ExpoSecureStoreAdapter = {
-  getItem: (key: string) => {
-    return SecureStore.getItemAsync(key)
+// Adapter para AsyncStorage (funciona em todas as plataformas)
+const ExpoStorageAdapter = {
+  getItem: async (key: string) => {
+    try {
+      return await AsyncStorage.getItem(key)
+    } catch {
+      return null
+    }
   },
-  setItem: (key: string, value: string) => {
-    SecureStore.setItemAsync(key, value)
+  setItem: async (key: string, value: string) => {
+    try {
+      await AsyncStorage.setItem(key, value)
+    } catch {
+      // ignore
+    }
   },
-  removeItem: (key: string) => {
-    SecureStore.deleteItemAsync(key)
+  removeItem: async (key: string) => {
+    try {
+      await AsyncStorage.removeItem(key)
+    } catch {
+      // ignore
+    }
   },
 }
 
@@ -21,7 +34,7 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPAB
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: ExpoSecureStoreAdapter as any,
+    storage: ExpoStorageAdapter,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
@@ -413,3 +426,84 @@ export function calculateTargetDate(pesoAtual: number, pesoMeta: number, velocid
   return dataAtual
 }
 
+// Remover última hidratação
+export async function removeLastHydration(): Promise<boolean> {
+  const userId = await getAuthenticatedUserId()
+  if (!userId) return false
+
+  const today = new Date().toISOString().split('T')[0]
+
+  // Busca o último registro
+  const { data: lastLog, error: fetchError } = await supabase
+    .from('hydration_logs')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('data', today)
+    .order('horario', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (fetchError || !lastLog) return false
+
+  // Remove
+  const { error } = await supabase
+    .from('hydration_logs')
+    .delete()
+    .eq('id', lastLog.id)
+
+  return !error
+}
+
+// Progresso da semana
+export async function getWeekProgress(): Promise<DailyProgress[]> {
+  const userId = await getAuthenticatedUserId()
+  if (!userId) return []
+
+  const today = new Date()
+  const weekAgo = new Date(today)
+  weekAgo.setDate(today.getDate() - 6)
+
+  const { data, error } = await supabase
+    .from('daily_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('data', weekAgo.toISOString().split('T')[0])
+    .lte('data', today.toISOString().split('T')[0])
+    .order('data', { ascending: true })
+
+  if (error) {
+    console.error('Erro ao buscar progresso da semana:', error)
+    return []
+  }
+
+  return data || []
+}
+
+// Tipo para histórico de peso
+export interface WeightLog {
+  id: string
+  user_id: string
+  data: string
+  peso: number
+  created_at: string
+}
+
+// Histórico de peso
+export async function getWeightHistory(): Promise<WeightLog[]> {
+  const userId = await getAuthenticatedUserId()
+  if (!userId) return []
+
+  const { data, error } = await supabase
+    .from('weight_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('data', { ascending: false })
+    .limit(30)
+
+  if (error) {
+    console.error('Erro ao buscar histórico de peso:', error)
+    return []
+  }
+
+  return data || []
+}
