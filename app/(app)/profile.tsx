@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '../../contexts/AuthContext'
 import { MimooImage } from '../../components/MimooImage'
@@ -25,12 +26,10 @@ export default function Profile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // Modais
   const [showPersonalData, setShowPersonalData] = useState(false)
   const [showGoals, setShowGoals] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
 
-  // Dados de edição
   const [editName, setEditName] = useState(profile?.nome || '')
   const [editAltura, setEditAltura] = useState(profile?.altura?.toString() || '')
   const [editIdade, setEditIdade] = useState(profile?.idade?.toString() || '')
@@ -49,7 +48,7 @@ export default function Profile() {
 
   const handlePhotoUpload = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       quality: 0.7,
       allowsEditing: true,
       aspect: [1, 1],
@@ -59,11 +58,6 @@ export default function Profile() {
       setUploadingPhoto(true)
       try {
         const file = result.assets[0]
-        const fileExt = file.uri.split('.').pop()
-        const fileName = `${profile.id}-${Date.now()}.${fileExt}`
-
-        // Para simplificar, vamos apenas atualizar o perfil com a URI local
-        // Em produção, você faria upload para o Supabase Storage
         await updateUserProfile({ foto_url: file.uri })
         await refreshProfile()
       } catch (error) {
@@ -133,9 +127,10 @@ export default function Profile() {
 
   const menuItems = [
     {
-      icon: '👤',
+      icon: 'person' as const,
       label: 'Dados pessoais',
-      color: 'coral',
+      color: '#FF7F6B',
+      bgColor: 'bg-coral-100',
       onPress: () => {
         setEditName(profile?.nome || '')
         setEditAltura(profile?.altura?.toString() || '')
@@ -145,9 +140,10 @@ export default function Profile() {
       }
     },
     {
-      icon: '🎯',
+      icon: 'flag' as const,
       label: 'Metas e objetivos',
-      color: 'sage',
+      color: '#8FBC8F',
+      bgColor: 'bg-sage-100',
       onPress: () => {
         setEditPeso(profile?.peso?.toString() || '')
         setEditPesoMeta(profile?.peso_meta?.toString() || '')
@@ -157,21 +153,24 @@ export default function Profile() {
       }
     },
     {
-      icon: '🔔',
+      icon: 'notifications' as const,
       label: 'Notificações',
-      color: 'amber',
+      color: '#F59E0B',
+      bgColor: 'bg-amber-100',
       onPress: () => Alert.alert('Em breve', 'Configurações de notificação estarão disponíveis em breve!')
     },
     {
-      icon: '🛡️',
+      icon: 'shield-checkmark' as const,
       label: 'Privacidade',
-      color: 'coral',
+      color: '#FF7F6B',
+      bgColor: 'bg-coral-100',
       onPress: () => Alert.alert('Privacidade', 'Seus dados estão seguros e nunca são compartilhados com terceiros.')
     },
     {
-      icon: '❓',
+      icon: 'help-circle' as const,
       label: 'Ajuda e suporte',
-      color: 'sage',
+      color: '#8FBC8F',
+      bgColor: 'bg-sage-100',
       onPress: () => setShowHelp(true)
     },
   ]
@@ -186,7 +185,7 @@ export default function Profile() {
               onPress={() => router.back()}
               className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
             >
-              <Text className="text-white text-xl">←</Text>
+              <Ionicons name="arrow-back" size={22} color="white" />
             </TouchableOpacity>
             <Text className="text-2xl font-bold text-white">Perfil</Text>
             <View className="w-10" />
@@ -205,7 +204,7 @@ export default function Profile() {
                 )}
               </View>
               <View className="absolute bottom-0 right-0 w-8 h-8 bg-coral-600 rounded-full items-center justify-center">
-                <Text className="text-white">📷</Text>
+                <Ionicons name="camera" size={16} color="white" />
               </View>
             </TouchableOpacity>
             <Text className="text-2xl font-bold text-white mt-4">{name}</Text>
@@ -218,7 +217,7 @@ export default function Profile() {
           <View className="flex-row gap-3 mb-6">
             <View className="flex-1 bg-white rounded-2xl p-4 items-center shadow-lg">
               <View className="w-12 h-12 bg-coral-100 rounded-xl items-center justify-center mb-3">
-                <Text className="text-2xl">⚖️</Text>
+                <Ionicons name="scale" size={24} color="#FF7F6B" />
               </View>
               <Text className="text-2xl font-bold text-gray-800">{currentWeight}kg</Text>
               <Text className="text-xs text-gray-600 mt-1">Peso atual</Text>
@@ -226,7 +225,7 @@ export default function Profile() {
 
             <View className="flex-1 bg-white rounded-2xl p-4 items-center shadow-lg">
               <View className="w-12 h-12 bg-sage-100 rounded-xl items-center justify-center mb-3">
-                <Text className="text-2xl">🎯</Text>
+                <Ionicons name="flag" size={24} color="#8FBC8F" />
               </View>
               <Text className="text-2xl font-bold text-gray-800">{goalWeight}kg</Text>
               <Text className="text-xs text-gray-600 mt-1">Meta</Text>
@@ -243,30 +242,32 @@ export default function Profile() {
                   index !== menuItems.length - 1 ? 'border-b border-gray-100' : ''
                 }`}
               >
-                <View className={`w-11 h-11 rounded-xl items-center justify-center mr-4 ${
-                  item.color === 'coral' ? 'bg-coral-100' :
-                  item.color === 'sage' ? 'bg-sage-100' : 'bg-amber-100'
-                }`}>
-                  <Text className="text-xl">{item.icon}</Text>
+                <View className={`w-11 h-11 rounded-xl items-center justify-center mr-4 ${item.bgColor}`}>
+                  <Ionicons name={item.icon} size={22} color={item.color} />
                 </View>
                 <Text className="flex-1 font-medium text-gray-800">{item.label}</Text>
-                <Text className="text-gray-400">›</Text>
+                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
               </TouchableOpacity>
             ))}
           </View>
 
           {/* Premium CTA */}
-          <View className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-3xl p-6 mb-6">
-            <Text className="text-xl font-bold text-white mb-2">
-              Upgrade para Premium ✨
-            </Text>
+          <TouchableOpacity 
+            onPress={() => router.push('/(app)/premium')}
+            className="bg-amber-500 rounded-3xl p-6 mb-6"
+          >
+            <View className="flex-row items-center mb-2">
+              <Ionicons name="diamond" size={24} color="white" />
+              <Text className="text-xl font-bold text-white ml-2">Upgrade para Premium</Text>
+            </View>
             <Text className="text-white/90 text-sm mb-4">
               Desbloqueie recursos exclusivos e tenha uma experiência ainda melhor!
             </Text>
-            <TouchableOpacity className="bg-white py-3 px-6 rounded-2xl self-start">
+            <View className="bg-white py-3 px-6 rounded-2xl self-start flex-row items-center">
               <Text className="font-semibold text-amber-600">Ver benefícios</Text>
-            </TouchableOpacity>
-          </View>
+              <Ionicons name="arrow-forward" size={16} color="#D97706" style={{ marginLeft: 4 }} />
+            </View>
+          </TouchableOpacity>
 
           {/* Logout */}
           <TouchableOpacity
@@ -278,16 +279,17 @@ export default function Profile() {
               <ActivityIndicator color="#DC2626" />
             ) : (
               <>
-                <Text className="text-2xl mr-2">🚪</Text>
+                <Ionicons name="log-out" size={22} color="#DC2626" style={{ marginRight: 8 }} />
                 <Text className="font-semibold text-red-600">Sair da conta</Text>
               </>
             )}
           </TouchableOpacity>
 
           {/* Version */}
-          <Text className="text-center text-gray-500 text-sm mb-8">
-            Mimoo v1.0.0 • Feito com 💚
-          </Text>
+          <View className="flex-row items-center justify-center mb-8">
+            <Text className="text-gray-500 text-sm">Mimoo v1.0.0 • Feito com </Text>
+            <Ionicons name="heart" size={14} color="#8FBC8F" />
+          </View>
         </View>
       </ScrollView>
 
@@ -335,20 +337,32 @@ export default function Profile() {
               <View className="flex-row gap-3">
                 <TouchableOpacity
                   onPress={() => setEditGenero('feminino')}
-                  className={`flex-1 h-12 rounded-2xl items-center justify-center ${
+                  className={`flex-1 h-12 rounded-2xl items-center justify-center flex-row ${
                     editGenero === 'feminino' ? 'bg-coral-500' : 'bg-gray-100'
                   }`}
                 >
+                  <Ionicons 
+                    name="female" 
+                    size={18} 
+                    color={editGenero === 'feminino' ? 'white' : '#374151'} 
+                    style={{ marginRight: 4 }}
+                  />
                   <Text className={editGenero === 'feminino' ? 'text-white font-semibold' : 'text-gray-700'}>
                     Feminino
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setEditGenero('masculino')}
-                  className={`flex-1 h-12 rounded-2xl items-center justify-center ${
+                  className={`flex-1 h-12 rounded-2xl items-center justify-center flex-row ${
                     editGenero === 'masculino' ? 'bg-coral-500' : 'bg-gray-100'
                   }`}
                 >
+                  <Ionicons 
+                    name="male" 
+                    size={18} 
+                    color={editGenero === 'masculino' ? 'white' : '#374151'} 
+                    style={{ marginRight: 4 }}
+                  />
                   <Text className={editGenero === 'masculino' ? 'text-white font-semibold' : 'text-gray-700'}>
                     Masculino
                   </Text>
@@ -415,17 +429,23 @@ export default function Profile() {
                 <Text className="text-sm text-gray-600 mb-2">Objetivo</Text>
                 <View className="gap-2">
                   {[
-                    { value: 'perder_peso', label: '📉 Perder peso' },
-                    { value: 'manter_peso', label: '⚖️ Manter peso' },
-                    { value: 'ganhar_massa', label: '💪 Ganhar massa' },
+                    { value: 'perder_peso', label: 'Perder peso', icon: 'trending-down' as const },
+                    { value: 'manter_peso', label: 'Manter peso', icon: 'scale' as const },
+                    { value: 'ganhar_massa', label: 'Ganhar massa', icon: 'barbell' as const },
                   ].map((opt) => (
                     <TouchableOpacity
                       key={opt.value}
                       onPress={() => setEditObjetivo(opt.value)}
-                      className={`h-12 rounded-2xl items-center justify-center ${
+                      className={`h-12 rounded-2xl items-center justify-center flex-row ${
                         editObjetivo === opt.value ? 'bg-sage-500' : 'bg-gray-100'
                       }`}
                     >
+                      <Ionicons 
+                        name={opt.icon} 
+                        size={18} 
+                        color={editObjetivo === opt.value ? 'white' : '#374151'} 
+                        style={{ marginRight: 8 }}
+                      />
                       <Text className={editObjetivo === opt.value ? 'text-white font-semibold' : 'text-gray-700'}>
                         {opt.label}
                       </Text>
@@ -488,22 +508,31 @@ export default function Profile() {
             <View className="items-center py-4 mb-6">
               <MimooImage variant="camera" size="lg" />
               <Text className="text-gray-600 mt-4 text-center">
-                O Mimoo está aqui para te ajudar! 💚
+                O Mimoo está aqui para te ajudar!
               </Text>
             </View>
 
             <View className="gap-2 mb-6">
               <TouchableOpacity className="flex-row items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                <Text className="text-gray-800">📧 Enviar email</Text>
-                <Text className="text-gray-400">›</Text>
+                <View className="flex-row items-center">
+                  <Ionicons name="mail" size={20} color="#374151" style={{ marginRight: 12 }} />
+                  <Text className="text-gray-800">Enviar email</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
               </TouchableOpacity>
               <TouchableOpacity className="flex-row items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                <Text className="text-gray-800">❓ Perguntas frequentes</Text>
-                <Text className="text-gray-400">›</Text>
+                <View className="flex-row items-center">
+                  <Ionicons name="help-circle" size={20} color="#374151" style={{ marginRight: 12 }} />
+                  <Text className="text-gray-800">Perguntas frequentes</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
               </TouchableOpacity>
               <TouchableOpacity className="flex-row items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                <Text className="text-gray-800">📱 Tutorial do app</Text>
-                <Text className="text-gray-400">›</Text>
+                <View className="flex-row items-center">
+                  <Ionicons name="play-circle" size={20} color="#374151" style={{ marginRight: 12 }} />
+                  <Text className="text-gray-800">Tutorial do app</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
               </TouchableOpacity>
             </View>
 
