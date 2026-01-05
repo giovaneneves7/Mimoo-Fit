@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { MimooImage } from '../../components/MimooImage'
 import { analyzeMealPhoto, MealAnalysis } from '../../lib/openai'
 import { addMeal } from '../../lib/supabase'
+import { getTodayDateString, getCurrentTimeString, getMealTypeByTime } from '../../lib/date-utils'
 
 type Step = 'camera' | 'analyzing' | 'result' | 'not_food'
 
@@ -128,19 +129,12 @@ export default function Scanner() {
     console.log('Salvando refeição...')
 
     try {
-      const now = new Date()
-      const horario = now.toTimeString().substring(0, 8)
-      const data = now.toISOString().split('T')[0]
+      // Usa funções de data centralizadas (horário de Brasília)
+      const horario = getCurrentTimeString()
+      const data = getTodayDateString()
+      const tipo_refeicao = getMealTypeByTime()
 
-      const hour = now.getHours()
-      let tipo_refeicao: 'cafe' | 'lanche_manha' | 'almoco' | 'lanche_tarde' | 'jantar' | 'ceia'
-
-      if (hour < 10) tipo_refeicao = 'cafe'
-      else if (hour < 12) tipo_refeicao = 'lanche_manha'
-      else if (hour < 15) tipo_refeicao = 'almoco'
-      else if (hour < 18) tipo_refeicao = 'lanche_tarde'
-      else if (hour < 21) tipo_refeicao = 'jantar'
-      else tipo_refeicao = 'ceia'
+      console.log('📅 Salvando refeição:', { data, horario, tipo_refeicao })
 
       const saved = await addMeal({
         nome: analysis.nome,

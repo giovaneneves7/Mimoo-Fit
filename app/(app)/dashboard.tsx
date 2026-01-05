@@ -24,22 +24,17 @@ import {
   DailyProgress,
   Meal
 } from '../../lib/supabase'
+import { getGreeting as getGreetingUtil, getWeekDays, getTodayDateString } from '../../lib/date-utils'
 
-// Função para obter saudação baseada no horário de Brasília
+// Função para obter saudação com ícone
 function getGreeting(): { greeting: string; icon: keyof typeof Ionicons.glyphMap } {
-  const now = new Date()
-  const brasiliaOffset = -3 * 60
-  const localOffset = now.getTimezoneOffset()
-  const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000)
-  const hour = brasiliaTime.getHours()
-
-  if (hour >= 5 && hour < 12) {
-    return { greeting: 'Bom dia', icon: 'sunny' }
-  } else if (hour >= 12 && hour < 18) {
-    return { greeting: 'Boa tarde', icon: 'partly-sunny' }
-  } else {
-    return { greeting: 'Boa noite', icon: 'moon' }
+  const { greeting, period } = getGreetingUtil()
+  const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
+    morning: 'sunny',
+    afternoon: 'partly-sunny',
+    evening: 'moon',
   }
+  return { greeting, icon: iconMap[period] }
 }
 
 // Mensagens carinhosas do Mimoo baseadas no contexto
@@ -152,8 +147,8 @@ export default function Dashboard() {
         const percentage = (caloriesConsumed / caloriesGoal) * 100
 
         if (percentage >= 95 && percentage <= 105) {
-          const today = new Date().toISOString().split('T')[0]
-          const celebrationKey = `mimoo_celebration_${today}`
+          const todayStr = getTodayDateString()
+          const celebrationKey = `mimoo_celebration_${todayStr}`
           const alreadyShown = await AsyncStorage.getItem(celebrationKey)
           
           if (!alreadyShown) {
@@ -205,22 +200,20 @@ export default function Dashboard() {
     fat: todayProgress?.gorduras_consumidas || 0
   }
 
-  const today = new Date()
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(today)
-    date.setDate(today.getDate() - (6 - i))
-
-    const dayProgress = weekProgress.find(p => {
-      const progressDate = new Date(p.data)
-      return progressDate.toDateString() === date.toDateString()
-    })
-
-    const dayNames = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+  // Usa funções centralizadas de data (horário de Brasília)
+  const weekDaysData = getWeekDays()
+  const weekDays = weekDaysData.map(day => {
+    const dayProgress = weekProgress.find(p => p.data === day.dateString)
+    
+    // Abreviações curtas dos dias
+    const shortDayNames: Record<string, string> = {
+      'Dom': 'D', 'Seg': 'S', 'Ter': 'T', 'Qua': 'Q', 'Qui': 'Q', 'Sex': 'S', 'Sáb': 'S'
+    }
 
     return {
-      day: dayNames[date.getDay()],
-      date: date.getDate(),
-      active: date.toDateString() === today.toDateString(),
+      day: shortDayNames[day.dayName] || day.dayName[0],
+      date: day.dayNumber,
+      active: day.isToday,
       completed: dayProgress?.meta_cumprida || false
     }
   })

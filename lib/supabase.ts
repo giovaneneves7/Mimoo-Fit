@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto'
 import { createClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
+import { getTodayDateString, formatDateString, getCurrentTimeString } from './date-utils'
 
 // Adapter para AsyncStorage (funciona em todas as plataformas)
 const ExpoStorageAdapter = {
@@ -160,7 +161,7 @@ export async function getTodayProgress(): Promise<DailyProgress | null> {
   const userId = await getAuthenticatedUserId()
   if (!userId) return null
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayDateString()
 
   const { data, error } = await supabase
     .from('daily_progress')
@@ -181,7 +182,7 @@ export async function getTodayMeals(): Promise<Meal[]> {
   const userId = await getAuthenticatedUserId()
   if (!userId) return []
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayDateString()
 
   const { data, error } = await supabase
     .from('meals')
@@ -213,7 +214,91 @@ export async function addMeal(meal: Omit<Meal, 'id' | 'user_id' | 'created_at'>)
     return null
   }
 
+  // Atualiza o progresso diário automaticamente
+  if (data) {
+    await updateDailyProgress(userId, meal.data)
+  }
+
   return data
+}
+
+// Atualiza ou cria o progresso diário
+async function updateDailyProgress(userId: string, data: string): Promise<void> {
+  try {
+    // Busca todas as refeições do dia
+    const { data: mealsData, error: mealsError } = await supabase
+      .from('meals')
+      .select('calorias, carboidratos, proteinas, gorduras')
+      .eq('user_id', userId)
+      .eq('data', data)
+
+    if (mealsError) {
+      console.error('Erro ao buscar refeições do dia:', mealsError)
+      return
+    }
+
+    // Calcula totais
+    const totals = (mealsData || []).reduce(
+      (acc, meal) => ({
+        calorias: acc.calorias + (meal.calorias || 0),
+        carboidratos: acc.carboidratos + (meal.carboidratos || 0),
+        proteinas: acc.proteinas + (meal.proteinas || 0),
+        gorduras: acc.gorduras + (meal.gorduras || 0),
+      }),
+      { calorias: 0, carboidratos: 0, proteinas: 0, gorduras: 0 }
+    )
+
+    // Busca a meta de calorias do usuário
+    const { data: userData } = await supabase
+      .from('users')
+      .select('calorias_diarias')
+      .eq('id', userId)
+      .single()
+
+    const caloriesGoal = userData?.calorias_diarias || 2000
+    // Meta cumprida se estiver entre 90% e 110% da meta
+    const metaCumprida = totals.calorias >= caloriesGoal * 0.9 && totals.calorias <= caloriesGoal * 1.1
+
+    // Verifica se já existe progresso para o dia
+    const { data: existingProgress } = await supabase
+      .from('daily_progress')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('data', data)
+      .single()
+
+    if (existingProgress) {
+      // Atualiza
+      await supabase
+        .from('daily_progress')
+        .update({
+          calorias_consumidas: totals.calorias,
+          carboidratos_consumidos: totals.carboidratos,
+          proteinas_consumidas: totals.proteinas,
+          gorduras_consumidas: totals.gorduras,
+          meta_cumprida: metaCumprida,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingProgress.id)
+    } else {
+      // Cria novo
+      await supabase
+        .from('daily_progress')
+        .insert({
+          user_id: userId,
+          data,
+          calorias_consumidas: totals.calorias,
+          carboidratos_consumidos: totals.carboidratos,
+          proteinas_consumidas: totals.proteinas,
+          gorduras_consumidas: totals.gorduras,
+          meta_cumprida: metaCumprida,
+        })
+    }
+
+    console.log('✅ Progresso diário atualizado:', { data, totals, metaCumprida })
+  } catch (error) {
+    console.error('Erro ao atualizar progresso diário:', error)
+  }
 }
 
 // Hidratação
@@ -221,7 +306,7 @@ export async function getTodayHydration(): Promise<{ total: number; logs: Hydrat
   const userId = await getAuthenticatedUserId()
   if (!userId) return { total: 0, logs: [] }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayDateString()
 
   const { data, error } = await supabase
     .from('hydration_logs')
@@ -248,9 +333,8 @@ export async function addHydration(
   const userId = await getAuthenticatedUserId()
   if (!userId) return null
 
-  const now = new Date()
-  const today = now.toISOString().split('T')[0]
-  const horario = now.toTimeString().substring(0, 8)
+  const today = getTodayDateString()
+  const horario = getCurrentTimeString()
 
   const { data, error } = await supabase
     .from('hydration_logs')
@@ -431,7 +515,7 @@ export async function removeLastHydration(): Promise<boolean> {
   const userId = await getAuthenticatedUserId()
   if (!userId) return false
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getTodayDateString()
 
   // Busca o último registro
   const { data: lastLog, error: fetchError } = await supabase
@@ -459,16 +543,21 @@ export async function getWeekProgress(): Promise<DailyProgress[]> {
   const userId = await getAuthenticatedUserId()
   if (!userId) return []
 
-  const today = new Date()
+  // Usa data local de Brasília
+  const todayString = getTodayDateString()
+  const today = new Date(todayString + 'T12:00:00') // Meio dia para evitar problemas de timezone
   const weekAgo = new Date(today)
   weekAgo.setDate(today.getDate() - 6)
+  const weekAgoString = formatDateString(weekAgo)
+
+  console.log('📅 Buscando progresso da semana:', { de: weekAgoString, ate: todayString })
 
   const { data, error } = await supabase
     .from('daily_progress')
     .select('*')
     .eq('user_id', userId)
-    .gte('data', weekAgo.toISOString().split('T')[0])
-    .lte('data', today.toISOString().split('T')[0])
+    .gte('data', weekAgoString)
+    .lte('data', todayString)
     .order('data', { ascending: true })
 
   if (error) {

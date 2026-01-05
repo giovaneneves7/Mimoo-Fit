@@ -13,25 +13,32 @@ import { MimooImage } from '../../components/MimooImage'
 import {
   getCurrentUser,
   getWeekProgress,
+  getTodayProgress,
   User as UserType,
   DailyProgress,
 } from '../../lib/supabase'
+import { getWeekDays, getTodayDateString } from '../../lib/date-utils'
 
 export default function Analytics() {
   const router = useRouter()
   const [user, setUser] = useState<UserType | null>(null)
   const [weekProgress, setWeekProgress] = useState<DailyProgress[]>([])
+  const [todayProgress, setTodayProgress] = useState<DailyProgress | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const loadData = async () => {
     try {
-      const [userData, weekData] = await Promise.all([
+      const [userData, weekData, todayData] = await Promise.all([
         getCurrentUser(),
         getWeekProgress(),
+        getTodayProgress(),
       ])
       setUser(userData)
       setWeekProgress(weekData)
+      setTodayProgress(todayData)
+      console.log('📊 Dados da semana:', weekData)
+      console.log('📊 Progresso de hoje:', todayData)
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
     } finally {
@@ -60,36 +67,41 @@ export default function Analytics() {
     )
   }
 
+  const caloriesGoal = user.calorias_diarias || 2000
+
+  // Dias da semana para gráfico - usando funções centralizadas de Brasília
+  const weekDaysData = getWeekDays()
+  
+  const weekDaysChart = weekDaysData.map(day => {
+    // Encontra o progresso do dia comparando strings de data
+    const dayProgress = weekProgress.find(p => p.data === day.dateString)
+    
+    const calories = dayProgress?.calorias_consumidas || 0
+    const percentage = calories > 0 ? Math.min((calories / caloriesGoal) * 100, 100) : 0
+    
+    // Calcula se a meta foi cumprida (entre 90% e 110% da meta)
+    const isOnTrack = calories > 0 && (calories >= caloriesGoal * 0.9 && calories <= caloriesGoal * 1.1)
+    
+    return {
+      day: day.dayName,
+      dateString: day.dateString,
+      percentage,
+      calories,
+      completed: dayProgress?.meta_cumprida || isOnTrack,
+      isToday: day.isToday,
+    }
+  })
+
   // Calcular estatísticas da semana
-  const totalCalories = weekProgress.reduce((sum, day) => sum + (day.calorias_consumidas || 0), 0)
-  const avgCalories = weekProgress.length > 0 ? Math.round(totalCalories / weekProgress.length) : 0
-  const daysOnTrack = weekProgress.filter(day => day.meta_cumprida).length
+  const daysWithData = weekDaysChart.filter(d => d.calories > 0)
+  const totalCalories = daysWithData.reduce((sum, day) => sum + day.calories, 0)
+  const avgCalories = daysWithData.length > 0 ? Math.round(totalCalories / daysWithData.length) : 0
+  const daysOnTrack = weekDaysChart.filter(day => day.completed).length
 
   // Calcular variação de peso
   const latestWeight = user.peso
   const goalWeight = user.peso_meta
   const weightDiff = latestWeight - goalWeight
-
-  // Dias da semana para gráfico
-  const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-  const today = new Date()
-  const weekDaysChart = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(today)
-    date.setDate(today.getDate() - (6 - i))
-    const dayProgress = weekProgress.find(p => {
-      const progressDate = new Date(p.data)
-      return progressDate.toDateString() === date.toDateString()
-    })
-    const caloriesGoal = user.calorias_diarias || 2000
-    const percentage = dayProgress ? Math.min((dayProgress.calorias_consumidas / caloriesGoal) * 100, 100) : 0
-    
-    return {
-      day: dayNames[date.getDay()],
-      percentage,
-      calories: dayProgress?.calorias_consumidas || 0,
-      completed: dayProgress?.meta_cumprida || false,
-    }
-  })
 
   return (
     <SafeAreaView className="flex-1 bg-cream">
@@ -144,12 +156,17 @@ export default function Analytics() {
                   <View className="w-full px-1 h-32 justify-end">
                     <View 
                       className={`w-full rounded-t-lg ${
-                        day.completed ? 'bg-sage-400' : 'bg-coral-400'
+                        day.completed ? 'bg-sage-400' : day.calories > 0 ? 'bg-coral-400' : 'bg-gray-200'
                       }`}
-                      style={{ height: `${Math.max(day.percentage, 5)}%` }}
+                      style={{ height: `${Math.max(day.percentage, day.calories > 0 ? 5 : 2)}%` }}
                     />
                   </View>
-                  <Text className="text-xs text-gray-500 mt-2">{day.day}</Text>
+                  <Text className={`text-xs mt-2 ${day.isToday ? 'text-coral-600 font-bold' : 'text-gray-500'}`}>
+                    {day.day}
+                  </Text>
+                  {day.isToday && (
+                    <View className="w-1.5 h-1.5 bg-coral-500 rounded-full mt-1" />
+                  )}
                 </View>
               ))}
             </View>
@@ -162,6 +179,10 @@ export default function Analytics() {
               <View className="flex-row items-center">
                 <View className="w-3 h-3 bg-coral-400 rounded-full mr-2" />
                 <Text className="text-sm text-gray-600">Fora da meta</Text>
+              </View>
+              <View className="flex-row items-center">
+                <View className="w-3 h-3 bg-gray-200 rounded-full mr-2" />
+                <Text className="text-sm text-gray-600">Sem dados</Text>
               </View>
             </View>
           </View>
@@ -217,6 +238,8 @@ export default function Analytics() {
                   ? 'Incrível! Você está arrasando esta semana. Continue assim!'
                   : daysOnTrack >= 3
                   ? 'Bom progresso! Foque nos próximos dias para manter a consistência.'
+                  : daysOnTrack >= 1
+                  ? 'Bom começo! Continue registrando suas refeições para acompanhar seu progresso.'
                   : 'Cada dia é uma nova chance! Vamos focar em pequenas melhorias.'}
               </Text>
             </View>
