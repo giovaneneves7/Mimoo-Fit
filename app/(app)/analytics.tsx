@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View,
   Text,
@@ -52,6 +52,22 @@ export default function Analytics() {
     }, [])
   )
 
+  // Verifica a cada 60 segundos se o dia mudou e atualiza automaticamente
+  useEffect(() => {
+    let currentDay = getTodayDateString()
+    
+    const checkDayChange = setInterval(() => {
+      const newDay = getTodayDateString()
+      if (newDay !== currentDay) {
+        console.log(`🌅 Analytics: Novo dia detectado! ${currentDay} → ${newDay}`)
+        currentDay = newDay
+        loadData()
+      }
+    }, 60000) // Verifica a cada 1 minuto
+
+    return () => clearInterval(checkDayChange)
+  }, [])
+
   const onRefresh = async () => {
     setRefreshing(true)
     await loadData()
@@ -79,8 +95,9 @@ export default function Analytics() {
     const calories = dayProgress?.calorias_consumidas || 0
     const percentage = calories > 0 ? Math.min((calories / caloriesGoal) * 100, 100) : 0
     
-    // Calcula se a meta foi cumprida (entre 90% e 110% da meta)
-    const isOnTrack = calories > 0 && (calories >= caloriesGoal * 0.9 && calories <= caloriesGoal * 1.1)
+    // Calcula se a meta foi cumprida (atingiu pelo menos 80% da meta)
+    // Não penalizamos por exceder - comer mais não invalida o dia
+    const isOnTrack = calories > 0 && calories >= caloriesGoal * 0.8
     
     return {
       day: day.dayName,

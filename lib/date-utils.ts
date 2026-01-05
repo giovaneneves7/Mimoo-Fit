@@ -3,22 +3,41 @@
  * Todas as funções usam o fuso horário de Brasília (UTC-3)
  */
 
-// Offset de Brasília em minutos (-3 horas = -180 minutos)
-const BRASILIA_OFFSET = -180
-
 /**
- * Retorna a data/hora atual no fuso de Brasília
+ * Retorna a data/hora atual no fuso de Brasília (UTC-3)
+ * Usa Intl.DateTimeFormat para garantir precisão em qualquer dispositivo
  */
 export function getBrasiliaDate(): Date {
   const now = new Date()
-  // Calcula a diferença entre UTC e Brasília
-  const utcOffset = now.getTimezoneOffset() // minutos do dispositivo para UTC
-  const brasiliaOffset = BRASILIA_OFFSET // minutos de Brasília para UTC
-  const diff = utcOffset - brasiliaOffset // diferença em minutos
   
-  // Se o dispositivo já estiver em Brasília, diff será 0
-  // Caso contrário, ajusta para Brasília
-  return new Date(now.getTime() + diff * 60 * 1000)
+  // Usa Intl.DateTimeFormat para obter os componentes no fuso de Brasília
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+  
+  const parts = formatter.formatToParts(now)
+  
+  const year = parseInt(parts.find(p => p.type === 'year')?.value || '2026')
+  const month = parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1 // JavaScript months are 0-indexed
+  const day = parseInt(parts.find(p => p.type === 'day')?.value || '1')
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0')
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0')
+  const second = parseInt(parts.find(p => p.type === 'second')?.value || '0')
+  
+  // Cria uma nova data com os componentes de Brasília
+  // Isso "engana" o JavaScript para usar esses valores como se fossem locais
+  const brasiliaDate = new Date(year, month, day, hour, minute, second)
+  
+  console.log(`🕐 Hora Brasília: ${day}/${month + 1}/${year} ${hour}:${minute}:${second}`)
+  
+  return brasiliaDate
 }
 
 /**
@@ -95,22 +114,32 @@ export function getMealTypeByTime(): 'cafe' | 'lanche_manha' | 'almoco' | 'lanch
 
 /**
  * Retorna os últimos N dias incluindo hoje
+ * Calcula cada dia individualmente para evitar problemas de timezone
  */
 export function getLastNDays(n: number): { date: Date; dateString: string; dayName: string; dayNumber: number; isToday: boolean }[] {
-  const today = getBrasiliaDate()
   const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-  const todayString = formatDateString(today)
+  const todayString = getTodayDateString()
   
   return Array.from({ length: n }, (_, i) => {
-    const date = new Date(today)
-    date.setDate(today.getDate() - (n - 1 - i))
-    const dateString = formatDateString(date)
+    // Calcula quantos dias atrás (i=0 é n-1 dias atrás, i=n-1 é hoje)
+    const daysAgo = n - 1 - i
+    
+    // Pega a data de hoje em Brasília e subtrai os dias
+    const brasiliaNow = getBrasiliaDate()
+    const targetDate = new Date(brasiliaNow.getTime() - daysAgo * 24 * 60 * 60 * 1000)
+    
+    const dateString = formatDateString(targetDate)
+    
+    // O dia da semana deve ser calculado baseado na data string para evitar problemas de timezone
+    const dayOfWeek = targetDate.getDay()
+    
+    console.log(`📅 Dia ${i}: ${dateString} (${dayNames[dayOfWeek]}) - daysAgo: ${daysAgo} - isToday: ${dateString === todayString}`)
     
     return {
-      date,
+      date: targetDate,
       dateString,
-      dayName: dayNames[date.getDay()],
-      dayNumber: date.getDate(),
+      dayName: dayNames[dayOfWeek],
+      dayNumber: targetDate.getDate(),
       isToday: dateString === todayString,
     }
   })

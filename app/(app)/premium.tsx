@@ -395,20 +395,23 @@ export default function Premium() {
           </View>
 
           {/* CTA Final */}
-          <View className="bg-gradient-to-r from-coral-500 to-amber-500 rounded-3xl p-6 mb-8 items-center">
+          <View 
+            className="rounded-3xl p-6 mb-8 items-center"
+            style={{ backgroundColor: '#FF7F6B' }}
+          >
             <MimooImage variant="salad" size="md" />
             <Text className="text-white font-bold text-xl text-center mt-4">
               Junte-se a mais de 50.000 pessoas
             </Text>
-            <Text className="text-white/80 text-center mt-2 mb-4">
+            <Text className="text-white/90 text-center mt-2 mb-4">
               que já transformaram sua alimentação com o Mimoo
             </Text>
             <TouchableOpacity
               onPress={handleSubscribe}
               className="bg-white h-14 px-8 rounded-2xl items-center justify-center flex-row"
             >
-              <Text className="text-amber-600 font-bold text-lg">Começar agora</Text>
-              <Ionicons name="arrow-forward" size={20} color="#D97706" className="ml-2" />
+              <Text className="text-coral-600 font-bold text-lg">Começar agora</Text>
+              <Ionicons name="arrow-forward" size={20} color="#FF7F6B" style={{ marginLeft: 8 }} />
             </TouchableOpacity>
           </View>
 

@@ -256,8 +256,18 @@ async function updateDailyProgress(userId: string, data: string): Promise<void> 
       .single()
 
     const caloriesGoal = userData?.calorias_diarias || 2000
-    // Meta cumprida se estiver entre 90% e 110% da meta
-    const metaCumprida = totals.calorias >= caloriesGoal * 0.9 && totals.calorias <= caloriesGoal * 1.1
+    
+    // Meta cumprida se atingiu pelo menos 80% da meta calórica
+    // Não penalizamos por passar da meta (comer mais não invalida o dia)
+    const minCalories = caloriesGoal * 0.8  // 80% da meta
+    const metaCumprida = totals.calorias >= minCalories
+    
+    console.log('📊 Verificação de meta:', {
+      calorias_consumidas: totals.calorias,
+      meta_diaria: caloriesGoal,
+      minimo_para_meta: minCalories,
+      meta_cumprida: metaCumprida
+    })
 
     // Verifica se já existe progresso para o dia
     const { data: existingProgress } = await supabase

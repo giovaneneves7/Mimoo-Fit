@@ -168,6 +168,23 @@ export default function Dashboard() {
     }, [])
   )
 
+  // Verifica a cada 60 segundos se o dia mudou e atualiza automaticamente
+  useEffect(() => {
+    let currentDay = getTodayDateString()
+    
+    const checkDayChange = setInterval(() => {
+      const newDay = getTodayDateString()
+      if (newDay !== currentDay) {
+        console.log(`🌅 Novo dia detectado! ${currentDay} → ${newDay}`)
+        currentDay = newDay
+        setCelebrationShown(false) // Reset para poder mostrar celebração do novo dia
+        loadData()
+      }
+    }, 60000) // Verifica a cada 1 minuto
+
+    return () => clearInterval(checkDayChange)
+  }, [])
+
   const onRefresh = async () => {
     setRefreshing(true)
     await loadData()
