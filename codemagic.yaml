@@ -20,12 +20,14 @@ workflows:
       - name: iOS Code Signing
         script: |
           keychain initialize
-          # O --new força a criação de um certificado caso você não tenha a chave privada local
-          app-store-connect fetch-signing-files "ai.lasy.mimoo.app" --type IOS_APP_STORE --create --new
+          # COMANDO CORRIGIDO:
+          # 1. Sem a flag --new (que causou o erro)
+          # 2. Com a flag --create (como apagamos tudo na Apple, ele vai criar um novo automático)
+          # ATENÇÃO: Confirme se é "lasy" ou "lazy" abaixo!
+          app-store-connect fetch-signing-files "ai.lasy.mimoo.app" --type IOS_APP_STORE --create
           keychain add-certificates
       - name: Build IPA
         script: |
-          # Comando para compilar o projeto gerado pelo Expo
           x-codebuild build-release
     artifacts:
       - build/ios/ipa/*.ipa
