@@ -1,41 +1,25 @@
 workflows:
   ios-release:
-    name: iOS Release Build
+    name: iOS Release Build (EAS)
     max_build_duration: 120
     instance_type: mac_mini_m1
-    integrations:
-      app_store_connect: "Mimmo Key"
     environment:
       groups:
-        - app_store_credentials 
+        - app_store_credentials # Onde está o seu EXPO_TOKEN
       node: latest
       xcode: latest
     scripts:
       - name: Install dependencies
         script: |
           npm install
-      - name: Expo Prebuild
+          npm install -g eas-cli
+      
+      - name: Build IPA via EAS
         script: |
-          npx expo prebuild --platform ios
-      - name: iOS Code Signing
-        script: |
-          keychain initialize
-          
-          # MUDANÇA CRÍTICA:
-          # Força a criação explícita de um certificado de distribuição.
-          # Isso gera a chave privada (.p12) localmente, impedindo o erro "Cannot save...".
-          app-store-connect create-certificate --type IOS_DISTRIBUTION
-          
-          # Agora busca/cria o profile vinculado a esse novo certificado
-          app-store-connect fetch-signing-files "ai.lasy.mimoo.app" --type IOS_APP_STORE --create
-          
-          keychain add-certificates
-      - name: Build IPA
-        script: |
-          x-codebuild build-release
+          # O EAS vai usar as credenciais que você acabou de gerar no Linux.
+          # --local: Usa a máquina do Codemagic.
+          # --non-interactive: Não faz perguntas.
+          EXPO_TOKEN=$EXPO_TOKEN npx eas build --platform ios --profile production --local --non-interactive --output=./build/ios/ipa/mimoo.ipa
+    
     artifacts:
       - build/ios/ipa/*.ipa
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
