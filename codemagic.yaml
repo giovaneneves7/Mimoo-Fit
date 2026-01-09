@@ -3,9 +3,8 @@ workflows:
     name: iOS Release Build
     max_build_duration: 120
     instance_type: mac_mini_m1
-    # Integrations fica fora de environment
     integrations:
-      - app_store_connect
+      app_store_connect: "Codemagic API" # Use exatamente o nome que você deu à chave no painel do Codemagic
     environment:
       groups:
         - app_store_credentials 
@@ -21,7 +20,7 @@ workflows:
       - name: iOS Code Signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "ai.lazy.mimoo.app" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "ai.lasy.mimoo.app" --type IOS_APP_STORE --create
           keychain add-certificates
       - name: Build IPA
         script: |
