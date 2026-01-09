@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m1
     integrations:
-      app_store_connect: "Mimmo Key" # Use exatamente o nome que você deu à chave no painel do Codemagic
+      app_store_connect: "Mimmo Key"
     environment:
       groups:
         - app_store_credentials 
@@ -20,10 +20,12 @@ workflows:
       - name: iOS Code Signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "ai.lasy.mimoo.app" --type IOS_APP_STORE --create
+          # O --new força a criação de um certificado caso você não tenha a chave privada local
+          app-store-connect fetch-signing-files "ai.lasy.mimoo.app" --type IOS_APP_STORE --create --new
           keychain add-certificates
       - name: Build IPA
         script: |
+          # Comando para compilar o projeto gerado pelo Expo
           x-codebuild build-release
     artifacts:
       - build/ios/ipa/*.ipa
