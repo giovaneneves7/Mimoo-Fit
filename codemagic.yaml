@@ -20,11 +20,15 @@ workflows:
       - name: iOS Code Signing
         script: |
           keychain initialize
-          # COMANDO CORRIGIDO:
-          # 1. Sem a flag --new (que causou o erro)
-          # 2. Com a flag --create (como apagamos tudo na Apple, ele vai criar um novo automático)
-          # ATENÇÃO: Confirme se é "lasy" ou "lazy" abaixo!
+          
+          # MUDANÇA CRÍTICA:
+          # Força a criação explícita de um certificado de distribuição.
+          # Isso gera a chave privada (.p12) localmente, impedindo o erro "Cannot save...".
+          app-store-connect create-certificate --type IOS_DISTRIBUTION
+          
+          # Agora busca/cria o profile vinculado a esse novo certificado
           app-store-connect fetch-signing-files "ai.lasy.mimoo.app" --type IOS_APP_STORE --create
+          
           keychain add-certificates
       - name: Build IPA
         script: |
