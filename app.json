@@ -15,10 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mimoo.app",
+      "bundleIdentifier": "ai.lasy.mimoo.app",
       "infoPlist": {
         "NSCameraUsageDescription": "O Mimoo precisa da câmera para analisar suas refeições",
-        "NSPhotoLibraryUsageDescription": "O Mimoo precisa acessar suas fotos para analisar refeições"
+        "NSPhotoLibraryUsageDescription": "O Mimoo precisa acessar suas fotos para analisar refeições",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -28,11 +29,12 @@
       },
       "package": "com.mimoo.app",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.RECORD_AUDIO"
       ],
       "edgeToEdgeEnabled": true
     },
@@ -67,9 +69,18 @@
       "typedRoutes": true
     },
     "extra": {
+      "router": {
+        "origin": false
+      },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "7048be30-c8c8-4364-bf73-2748049139a6"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7048be30-c8c8-4364-bf73-2748049139a6"
     }
   }
 }
