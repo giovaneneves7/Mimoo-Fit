@@ -5,7 +5,9 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       groups:
-        - app_store_credentials # Vamos criar esse grupo no painel do Codemagic
+        - app_store_credentials 
+      integrations:
+        - app_store_connect # Resolve o erro "requires workflow -> integrations"
       node: latest
       xcode: latest
     scripts:
@@ -14,19 +16,21 @@ workflows:
           npm install
       - name: Expo Prebuild
         script: |
+          # Gera a pasta /ios necessária para o build nativo
           npx expo prebuild --platform ios
       - name: iOS Code Signing
         script: |
-          # O Codemagic vai usar a API Key para buscar os perfis automaticamente
+          # Inicializa o chaveiro e busca certificados automaticamente usando a API Key
           keychain initialize
-          app-store-connect fetch-signing-files "ai.lasy.mimoo.app" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "ai.lazy.mimoo.app" --type IOS_APP_STORE --create
           keychain add-certificates
       - name: Build IPA
         script: |
+          # Comando para compilar o binário final (.ipa)
           x-codebuild build-release
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        submit_to_testflight: true # Envia automaticamente para o TestFlight
